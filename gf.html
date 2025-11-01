@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Invoice — DL LookUp</title>
+
+  <!-- JsBarcode CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+
+  <style>
+    :root{
+      --bg:#f6f8fb;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --accent:#0ea5a4; /* teal */
+      --accent-2:#0369a1; /* dark blue */
+      --shadow: 0 8px 28px rgba(12, 18, 33, 0.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    body{
+      margin:0;
+      min-height:100vh;
+      background:linear-gradient(180deg,#f6f8fb 0%, #eef4f9 100%);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:28px;
+      color:#0f172a;
+    }
+
+    .invoice {
+      width: 480px;
+      background:var(--card);
+      border-radius:12px;
+      box-shadow:var(--shadow);
+      padding:22px;
+      box-sizing:border-box;
+    }
+
+    header {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+
+    .brand {
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .logo {
+      width:48px; height:48px; border-radius:10px;
+      background:linear-gradient(135deg,var(--accent),var(--accent-2));
+      display:flex; align-items:center; justify-content:center;
+      color:white; font-weight:700; font-size:18px;
+      box-shadow: 0 6px 18px rgba(14,165,164,0.16);
+    }
+    h1 { margin:0; font-size:18px; }
+    p.muted { margin:0; color:var(--muted); font-size:13px; }
+
+    .content { margin-top:18px; }
+
+    .barcode-wrap{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:10px;
+      background:#fbfdff;
+      border-radius:8px;
+      border:1px solid #eef2f7;
+    }
+
+    .line-item{
+      display:flex;
+      justify-content:space-between;
+      margin:14px 0;
+      font-size:15px;
+      align-items:center;
+    }
+    .line-item.small { font-size:13px; color:var(--muted); }
+    .totals {
+      border-top:1px dashed #eef2f7;
+      padding-top:14px;
+      margin-top:10px;
+    }
+    .total-row{
+      display:flex;
+      justify-content:space-between;
+      font-weight:600;
+      font-size:16px;
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      margin-top:18px;
+    }
+
+    .btn {
+      flex:1;
+      padding:12px 14px;
+      border-radius:10px;
+      border:0;
+      cursor:pointer;
+      font-weight:600;
+      font-size:14px;
+    }
+
+    .btn-checkout {
+      background:linear-gradient(90deg,var(--accent-2),var(--accent));
+      color:white;
+      box-shadow: 0 8px 20px rgba(3,105,161,0.12);
+    }
+    .btn-print {
+      background:transparent;
+      border:1px solid #e6eef6;
+      color:var(--accent-2);
+    }
+
+    footer { margin-top:14px; font-size:12px; color:var(--muted); text-align:center; }
+
+    /* Responsive small */
+    @media (max-width:520px){
+      .invoice{ width:100%; padding:18px; border-radius:10px; }
+      .brand h1{ font-size:16px;}
+      .logo{ width:42px; height:42px; font-size:16px;}
+    }
+  </style>
+</head>
+<body>
+
+  <div class="invoice" role="region" aria-label="Invoice for barcode">
+    <header>
+      <div class="brand">
+        <div class="logo">DL</div>
+        <div>
+          <h1>DL LOOKup — Invoice</h1>
+          <p class="muted">Invoice for barcode purchase</p>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div class="muted" style="font-size:13px">Date</div>
+        <div id="invoiceDate" style="font-weight:600"></div>
+      </div>
+    </header>
+
+    <div class="content">
+      <!-- barcode -->
+      <div style="margin-top:14px">
+        <div class="barcode-wrap">
+          <!-- SVG will be generated here -->
+          <svg id="barcode"></svg>
+        </div>
+      </div>
+
+      <!-- Item rows -->
+      <div style="margin-top:16px">
+        <div class="line-item">
+          <div>
+            <div style="font-weight:700">Barcode Item</div>
+            <div class="small muted">Description: Barcode Encypter</div>
+          </div>
+          <div style="font-weight:700">$<span id="price">13.55</span></div>
+        </div>
+
+        <div class="line-item small">
+          <div>Tax</div>
+          <div>$<span id="tax">1.85</span></div>
+        </div>
+
+        <div class="totals">
+          <div class="total-row">
+            <div>Total</div>
+            <div>$ 15.40<span id="total"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-checkout" id="checkoutBtn">Checkout</button>
+        <button class="btn btn-print" id="printBtn">Print</button>
+      </div>
+
+      <footer>
+        <div>Thank you for your purchase — DL LOOKup</div>
+      </footer>
+    </div>
+  </div>
+
+<script>
+  // values
+  const price = 13.55;
+  const tax = 1.85;
+  const total = (price + tax).toFixed(2);
+
+  document.getElementById('price').textContent = price.toFixed(2);
+  document.getElementById('tax').textContent = tax.toFixed(2);
+  document.getElementById('total').textContent = total;
+
+  // date
+  const now = new Date();
+  document.getElementById('invoiceDate').textContent = now.toLocaleDateString();
+
+  // generate barcode (using JsBarcode)
+  // choose a barcode value (you can replace this with actual barcode text)
+  const barcodeValue = "DL-BC-20251031-001"; 
+  JsBarcode("#barcode", barcodeValue, {
+    format: "CODE128",
+    width: 2,
+    height: 60,
+    displayValue: true,
+    fontSize: 14,
+    margin: 6
+  });
+
+  // simple checkout simulation
+  document.getElementById('checkoutBtn').addEventListener('click', function(){
+    // Replace this with your real checkout flow (redirect to payment, open modal, call API)
+    const payload = {
+      item: "Barcode Item",
+      barcode: barcodeValue,
+      price: price,
+      tax: tax,
+      total: parseFloat(total)
+    };
+
+    // Example: open a confirmation modal style (simple)
+    const confirmed = confirm(`Proceed to checkout?\n\nItem: ${payload.item}\nTotal: $${payload.total}`);
+    if(!confirmed) return;
+
+    // Simulate network call
+    this.disabled = true;
+    this.textContent = "Processing…";
+
+    // simulate an async request (replace with fetch to your checkout endpoint)
+    setTimeout(() => {
+      alert("Checkout simulated — replace this code with your real payment integration.");
+      this.disabled = false;
+      this.textContent = "Checkout";
+    }, 1400);
+  });
+  });
+
+  // Print
+  document.getElementById('printBtn').addEventListener('click', function(){
+    window.print();
+  });
+</script>
+
+</body>
+</html>
